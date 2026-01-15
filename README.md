@@ -5,6 +5,12 @@ The focus of this project is **business-oriented modeling**, emphasizing recall 
 
 ---
 
+## 🌐 Live Demo
+🚀 **Streamlit App**:  
+👉 https://telco-customer-churn-classifier.streamlit.app/
+
+---
+
 ## 📌 Problem Statement
 Customer churn is a major challenge for telecom companies.  
 The goal of this project is to identify customers who are likely to churn so that retention strategies can be applied proactively.
