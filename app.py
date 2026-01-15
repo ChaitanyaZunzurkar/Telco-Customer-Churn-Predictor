@@ -2,47 +2,51 @@ import streamlit as st
 import pickle
 import pandas as pd
 
-# -------------------------------
+# ===============================
 # Page Config
-# -------------------------------
+# ===============================
 st.set_page_config(
     page_title="Telco Churn Predictor",
-    page_icon="📊",
     layout="wide"
 )
 
-# -------------------------------
-# Custom CSS
-# -------------------------------
+# ===============================
+# Custom CSS (Dark, Clean, No Empty Blocks)
+# ===============================
 st.markdown("""
 <style>
     .main {
-        background-color: #f8fafc;
+        background-color: #0f172a;
     }
     .block-container {
         padding-top: 2rem;
     }
-    h1, h2, h3 {
-        color: #0f172a;
+    h1, h2, h3, p, li {
+        color: #f8fafc;
+    }
+    .card {
+        background-color: #020617;
+        padding: 1.5rem;
+        border-radius: 14px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.4);
     }
     .stButton>button {
         width: 100%;
         height: 3em;
         font-size: 18px;
         border-radius: 10px;
+        background-color: #2563eb;
+        color: white;
     }
-    .card {
-        background-color: white;
-        padding: 1.5rem;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    .stButton>button:hover {
+        background-color: #1d4ed8;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------------------
+# ===============================
 # Load Model
-# -------------------------------
+# ===============================
 @st.cache_resource
 def load_model():
     with open("./model/xgb_churn_model.pkl", "rb") as f:
@@ -51,24 +55,24 @@ def load_model():
 
 artifact = load_model()
 model = artifact["model"]
-threshold = artifact["threshold"]
+threshold = float(artifact["threshold"])
 le = artifact["label_encoder"]
 
-# -------------------------------
+# ===============================
 # Header
-# -------------------------------
-st.title("Telco Customer Churn Predictor")
+# ===============================
+st.title("Telco Customer Churn Prediction")
 st.caption(
-    "A machine learning powered application that predicts whether a customer "
-    "is likely to churn — optimized for **high recall**."
+    "Predict whether a customer is likely to churn using a recall-optimized "
+    "XGBoost model."
 )
 
 st.markdown("---")
 
-# -------------------------------
+# ===============================
 # Sidebar Inputs
-# -------------------------------
-st.sidebar.header("Customer Details")
+# ===============================
+st.sidebar.header("Customer Information")
 
 with st.sidebar.form("customer_form"):
     gender = st.selectbox("Gender", ["Male", "Female"])
@@ -77,7 +81,7 @@ with st.sidebar.form("customer_form"):
     dependents = st.selectbox("Has Dependents?", ["Yes", "No"])
     tenure = st.slider("Tenure (months)", 0, 72, 12)
 
-    st.markdown("### Services")
+    st.markdown("### 📡 Services")
     phone_service = st.selectbox("Phone Service", ["Yes", "No"])
     multiple_lines = st.selectbox("Multiple Lines", ["Yes", "No", "No phone service"])
     internet_service = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
@@ -105,75 +109,71 @@ with st.sidebar.form("customer_form"):
     monthly_charges = st.number_input("Monthly Charges ($)", 0.0, 200.0, 70.0)
     total_charges = st.number_input("Total Charges ($)", 0.0, 10000.0, 2000.0)
 
-    submitted = st.form_submit_button("Predict Churn")
+    submitted = st.form_submit_button(" Predict Churn")
 
-# -------------------------------
-# Main Area
-# -------------------------------
-col1, col2 = st.columns([2, 1])
+# ===============================
+# Prediction Section (NO EMPTY COLUMNS)
+# ===============================
+if submitted:
+    st.markdown("## Prediction Output")
 
-with col1:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("Prediction Output")
+    with st.container():
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
 
-    if submitted:
-        with st.spinner("Analyzing customer behavior..."):
-            input_data = pd.DataFrame({
-                "gender": [gender],
-                "SeniorCitizen": [senior],
-                "Partner": [partner],
-                "Dependents": [dependents],
-                "tenure": [tenure],
-                "PhoneService": [phone_service],
-                "MultipleLines": [multiple_lines],
-                "InternetService": [internet_service],
-                "OnlineSecurity": [online_security],
-                "OnlineBackup": [online_backup],
-                "DeviceProtection": [device_protection],
-                "TechSupport": [tech_support],
-                "StreamingTV": [streaming_tv],
-                "StreamingMovies": [streaming_movies],
-                "Contract": [contract],
-                "PaperlessBilling": [paperless],
-                "PaymentMethod": [payment_method],
-                "MonthlyCharges": [monthly_charges],
-                "TotalCharges": [total_charges]
-            })
+        input_data = pd.DataFrame({
+            "gender": [gender],
+            "SeniorCitizen": [senior],
+            "Partner": [partner],
+            "Dependents": [dependents],
+            "tenure": [tenure],
+            "PhoneService": [phone_service],
+            "MultipleLines": [multiple_lines],
+            "InternetService": [internet_service],
+            "OnlineSecurity": [online_security],
+            "OnlineBackup": [online_backup],
+            "DeviceProtection": [device_protection],
+            "TechSupport": [tech_support],
+            "StreamingTV": [streaming_tv],
+            "StreamingMovies": [streaming_movies],
+            "Contract": [contract],
+            "PaperlessBilling": [paperless],
+            "PaymentMethod": [payment_method],
+            "MonthlyCharges": [monthly_charges],
+            "TotalCharges": [total_charges]
+        })
 
-            prob = model.predict_proba(input_data)[:, 1][0]
+        with st.spinner("Analyzing customer data..."):
+            prob = float(model.predict_proba(input_data)[:, 1][0])
             prediction = int(prob >= threshold)
             label = le.inverse_transform([prediction])[0]
 
-        st.metric(
-            label="Churn Probability",
-            value=f"{prob:.2%}"
-        )
+        # Metrics Row
+        col1, col2 = st.columns(2)
+        col1.metric("Churn Probability", f"{prob:.2%}")
+        col2.metric("Decision Threshold", f"{threshold:.2%}")
 
-        st.progress(float(prob))
+        st.progress(int(prob * 100))
+
+        st.markdown("---")
 
         if label == "Yes":
             st.error("**High Risk:** Customer is likely to churn")
         else:
             st.success("**Low Risk:** Customer is unlikely to churn")
 
-    else:
-        st.info("Fill customer details from the sidebar and click **Predict Churn**")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+# ===============================
+# About Model Section
+# ===============================
+st.markdown("## About the Model")
 
-with col2:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("About Model")
-    st.write("""
-    - **Model**: XGBoost Classifier  
-    - **Optimization**: Recall-focused  
-    - **Use Case**: Retention strategy  
-    - **Threshold Tuned**: Business driven
-    """)
-    st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("""
+- **Model**: XGBoost Classifier  
+- **Optimization**: Recall-focused  
+- **Threshold**: Tuned using business constraints  
+- **Goal**: Reduce false negatives (missed churners)
+""")
 
-# -------------------------------
-# Footer
-# -------------------------------
 st.markdown("---")
-st.caption("Built with Streamlit | Machine Learning for Customer Retention")
+st.caption("Built with Streamlit | ML for Customer Retention")
